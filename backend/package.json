@@ -1,0 +1,32 @@
+{
+  "name": "eolas-prediction-backend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "axios": "^1.7.2",
+    "openai": "^4.52.0",
+    "pg": "^8.12.0",
+    "ioredis": "^5.4.1",
+    "node-cron": "^3.0.3",
+    "zod": "^3.23.8",
+    "uuid": "^10.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.3",
+    "@types/express": "^4.17.21",
+    "@types/cors": "^2.8.17",
+    "@types/pg": "^8.11.6",
+    "@types/node": "^20.14.10",
+    "@types/node-cron": "^3.0.11",
+    "tsx": "^4.16.2",
+    "@types/uuid": "^10.0.0"
+  }
+}
