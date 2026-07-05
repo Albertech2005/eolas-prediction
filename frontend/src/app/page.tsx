@@ -339,7 +339,7 @@ export default function LandingPage() {
               <XIcon size={13} /> X
             </a>
             <a
-              href="https://t.me/c/eolastg/1"
+              href="https://t.me/eolastg"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-blue-400 transition-colors flex items-center gap-1.5"

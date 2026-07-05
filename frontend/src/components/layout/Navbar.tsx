@@ -84,7 +84,7 @@ export default function Navbar() {
             <XIcon size={13} />
           </a>
           <a
-            href="https://t.me/c/eolastg/1"
+            href="https://t.me/eolastg"
             target="_blank"
             rel="noopener noreferrer"
             title="Join Telegram"
