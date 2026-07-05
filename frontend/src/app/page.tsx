@@ -1,6 +1,5 @@
 "use client";
 import Link from "next/link";
-import Image from "next/image";
 import { useState, useEffect } from "react";
 import { Brain, TrendingUp, Eye, Activity, Swords, Trophy, ArrowRight, Zap, Shield, BarChart3, Sparkles, ChevronRight, Send } from "lucide-react";
 import CASection from "@/components/ui/CASection";
@@ -65,8 +64,8 @@ export default function LandingPage() {
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/5 bg-background/70 backdrop-blur-2xl" style={{ boxShadow: "0 1px 0 rgba(255,255,255,0.04), 0 4px 20px rgba(0,0,0,0.5)" }}>
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between h-16">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl overflow-hidden ring-2 ring-blue-500/30">
-              <Image src="/eolas-logo.png" alt="EOLAS" width={36} height={36} className="w-full h-full object-cover" />
+            <div className="w-9 h-9 rounded-xl ring-2 ring-blue-500/30 bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+              <span className="text-white font-black text-sm">E</span>
             </div>
             <span className="font-bold text-lg text-white tracking-tight">EOLAS</span>
             <span className="badge badge-blue">AI BETA</span>
@@ -319,8 +318,8 @@ export default function LandingPage() {
       <footer className="border-t border-white/5 py-10 px-6">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6 text-sm text-text-dim">
           <div className="flex items-center gap-3">
-            <div className="w-7 h-7 rounded-lg overflow-hidden ring-1 ring-white/10">
-              <Image src="/eolas-logo.png" alt="EOLAS" width={28} height={28} />
+            <div className="w-7 h-7 rounded-lg ring-1 ring-white/10 bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+              <span className="text-white font-black text-xs">E</span>
             </div>
             <span>EOLAS © 2026 · AI Prediction Intelligence · Built on Base</span>
           </div>

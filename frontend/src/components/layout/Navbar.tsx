@@ -1,6 +1,5 @@
 "use client";
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -34,8 +33,8 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-3 group flex-shrink-0">
-          <div className="w-9 h-9 rounded-xl overflow-hidden ring-2 ring-blue-500/30 group-hover:ring-blue-500/60 transition-all">
-            <Image src="/eolas-logo.png" alt="EOLAS" width={36} height={36} className="w-full h-full object-cover" />
+          <div className="w-9 h-9 rounded-xl ring-2 ring-blue-500/30 group-hover:ring-blue-500/60 transition-all bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+            <span className="text-white font-black text-sm">E</span>
           </div>
           <span className="font-black text-lg text-white tracking-tight group-hover:text-blue-400 transition-colors">EOLAS</span>
           <span className="badge badge-blue hidden sm:inline-flex">AI</span>
