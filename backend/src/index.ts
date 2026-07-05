@@ -14,7 +14,23 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-app.use(cors({ origin: process.env.FRONTEND_URL || "*" }));
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  "https://eolas-prediction.vercel.app",
+  "http://localhost:3000",
+].filter(Boolean);
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile, curl, etc)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    // Allow all vercel preview deployments
+    if (origin.endsWith(".vercel.app")) return callback(null, true);
+    return callback(null, true); // open for now
+  },
+  credentials: true,
+}));
 app.use(express.json());
 
 // Health check
