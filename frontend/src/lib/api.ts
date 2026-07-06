@@ -42,6 +42,10 @@ export const voteBattle = (id: string, side: "yes" | "no", address: string) =>
 export const createBattle = (data: { question: string; description: string; address: string }) =>
   api.post("/api/battles", data).then(r => r.data);
 
+// URL-based market lookup
+export const analyzeFromUrl = (url: string) =>
+  api.post("/api/markets/from-url", { url }).then(r => r.data);
+
 // Leaderboard
 export const getLeaderboard = () =>
   api.get("/api/leaderboard").then(r => r.data);

@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { fetchTrendingMarkets, fetchMarket, getMockMarkets } from "../services/polymarket";
+import { fetchTrendingMarkets, fetchMarket, fetchMarketBySlug, getMockMarkets } from "../services/polymarket";
 import { analyzeMarket } from "../services/aiEngine";
 
 const router = Router();
@@ -67,6 +67,58 @@ router.get("/", async (req: Request, res: Response) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to fetch markets" });
+  }
+});
+
+// POST /api/markets/from-url — resolve a Polymarket URL, fetch market + run AI analysis
+router.post("/from-url", async (req: Request, res: Response) => {
+  try {
+    const { url } = req.body as { url?: string };
+    if (!url || typeof url !== "string") {
+      return res.status(400).json({ error: "url is required" });
+    }
+
+    // Support: polymarket.com/event/{slug} or polymarket.com/market/{slug}
+    const match = url.match(/polymarket\.com\/(?:event|market)\/([^/?#\s]+)/i);
+    if (!match) {
+      return res.status(400).json({ error: "Not a valid Polymarket URL. Expected: polymarket.com/event/{slug}" });
+    }
+
+    const slug = match[1];
+    const raw = await fetchMarketBySlug(slug);
+
+    if (!raw) {
+      return res.status(404).json({ error: `Market "${slug}" not found on Polymarket. It may be closed or unlisted.` });
+    }
+
+    // Build enriched market (drift like the rest of the platform)
+    const drift = (Math.random() - 0.45) * 0.14;
+    const eolasProb = Math.min(0.96, Math.max(0.04, raw.yes_price + drift));
+
+    const market = {
+      id: raw.id,
+      question: raw.question,
+      category: raw.category,
+      image: raw.image,
+      polymarket_prob: raw.yes_price,
+      eolas_prob: eolasProb,
+      confidence: Math.floor(60 + Math.random() * 35),
+      volume: raw.volume,
+      volume24h: raw.volume24h,
+      liquidity: raw.liquidity,
+      prob_change_24h: 0,
+      end_date: raw.end_date,
+      active: raw.active,
+      slug,
+    };
+
+    // Full GPT AI analysis
+    const analysis = await analyzeMarket(raw.question, raw.yes_price, raw.category, raw.volume);
+
+    res.json({ market, analysis, slug });
+  } catch (err) {
+    console.error("from-url error:", err);
+    res.status(500).json({ error: "Failed to analyze market" });
   }
 });
 

@@ -99,6 +99,36 @@ export async function fetchTrendingMarkets(limit = 100): Promise<PolyMarket[]> {
   }
 }
 
+export async function fetchMarketBySlug(slug: string): Promise<PolyMarket | null> {
+  try {
+    // Gamma API supports ?slug= query
+    const res = await axios.get(`${GAMMA_API}/markets`, {
+      params: { slug, limit: 1, active: false }, // active:false so closed markets also resolve
+      timeout: 8000,
+    });
+    const data = Array.isArray(res.data) ? res.data : (res.data?.markets || []);
+    if (!data.length) return null;
+    const m = data[0];
+    const [yes, no] = parseOutcomePrices(m.outcomePrices);
+    return {
+      id: m.id || m.conditionId || slug,
+      question: m.question,
+      category: getCategory(m.question),
+      image: m.image || m.icon,
+      volume: parseFloat(m.volume || "0"),
+      volume24h: parseFloat(m.volume24hr || "0"),
+      liquidity: parseFloat(m.liquidity || "0"),
+      yes_price: yes,
+      no_price: no,
+      end_date: m.endDate || m.endDateIso,
+      active: !!m.active,
+      tags: [],
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchMarket(id: string): Promise<PolyMarket | null> {
   try {
     const res = await axios.get(`${GAMMA_API}/markets/${id}`, { timeout: 8000 });
