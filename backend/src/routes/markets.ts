@@ -134,24 +134,48 @@ router.get("/:id", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
+    // 1. Check in-memory cache
     const cached = marketCache.find(m => m.id === id);
     if (cached) return res.json({ market: cached });
 
+    // 2. Try direct numeric/conditionId lookup
     const raw = await fetchMarket(id);
-    if (!raw) {
-      const mock = getMockMarkets().find(m => m.id === id);
-      if (!mock) return res.status(404).json({ error: "Market not found" });
+    if (raw) {
+      const drift = (Math.random() - 0.45) * 0.14;
+      const eolasProb = Math.min(0.96, Math.max(0.04, raw.yes_price + drift));
       return res.json({
-        market: { ...mock, polymarket_prob: mock.yes_price, eolas_prob: mock.yes_price, confidence: 70, prob_change_24h: 0 }
+        market: {
+          id: raw.id, question: raw.question, category: raw.category, image: raw.image,
+          polymarket_prob: raw.yes_price, eolas_prob: eolasProb,
+          confidence: Math.floor(60 + Math.random() * 35),
+          volume: raw.volume, volume24h: raw.volume24h,
+          liquidity: raw.liquidity, prob_change_24h: 0, end_date: raw.end_date,
+        }
       });
     }
 
-    const market = {
-      id: raw.id, question: raw.question, category: raw.category, image: raw.image,
-      polymarket_prob: raw.yes_price, eolas_prob: raw.yes_price, confidence: 70,
-      volume: raw.volume, liquidity: raw.liquidity, prob_change_24h: 0, end_date: raw.end_date,
-    };
-    res.json({ market });
+    // 3. Slug-based fallback — handles markets pasted via URL (slug may be event or market slug)
+    const fromSlug = await fetchMarketBySlug(id);
+    if (fromSlug) {
+      const drift = (Math.random() - 0.45) * 0.14;
+      const eolasProb = Math.min(0.96, Math.max(0.04, fromSlug.yes_price + drift));
+      return res.json({
+        market: {
+          id: fromSlug.id, question: fromSlug.question, category: fromSlug.category, image: fromSlug.image,
+          polymarket_prob: fromSlug.yes_price, eolas_prob: eolasProb,
+          confidence: Math.floor(60 + Math.random() * 35),
+          volume: fromSlug.volume, volume24h: fromSlug.volume24h,
+          liquidity: fromSlug.liquidity, prob_change_24h: 0, end_date: fromSlug.end_date,
+        }
+      });
+    }
+
+    // 4. Mock fallback
+    const mock = getMockMarkets().find(m => m.id === id);
+    if (!mock) return res.status(404).json({ error: "Market not found" });
+    return res.json({
+      market: { ...mock, polymarket_prob: mock.yes_price, eolas_prob: mock.yes_price, confidence: 70, prob_change_24h: 0 }
+    });
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch market" });
   }
@@ -161,17 +185,32 @@ router.get("/:id", async (req: Request, res: Response) => {
 router.get("/:id/ai", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+
+    // Check enriched cache first
     const all = await buildEnrichedMarkets();
-    const market = all.find(m => m.id === id) || getMockMarkets().find(m => m.id === id);
+    let market: any = all.find(m => m.id === id) || getMockMarkets().find(m => m.id === id);
+
+    // Slug-based fallback for URL-pasted markets
+    if (!market) {
+      const fromSlug = await fetchMarketBySlug(id);
+      if (fromSlug) {
+        market = {
+          question: fromSlug.question,
+          polymarket_prob: fromSlug.yes_price,
+          category: fromSlug.category,
+          volume: fromSlug.volume,
+        };
+      }
+    }
 
     if (!market) return res.status(404).json({ error: "Market not found" });
 
-    const prob = (market as any).polymarket_prob || (market as any).yes_price || 0.5;
+    const prob = market.polymarket_prob || market.yes_price || 0.5;
     const analysis = await analyzeMarket(
-      (market as any).question,
+      market.question,
       prob,
-      (market as any).category || "General",
-      (market as any).volume || 0
+      market.category || "General",
+      market.volume || 0
     );
 
     res.json({ analysis });

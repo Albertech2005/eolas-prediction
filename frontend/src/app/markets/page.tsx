@@ -6,7 +6,7 @@ import SkeletonCard from "@/components/ui/SkeletonCard";
 import { getMarkets, analyzeFromUrl } from "@/lib/api";
 import {
   Search, SlidersHorizontal, RefreshCw, TrendingUp,
-  Link2, Brain, X, ExternalLink, Loader2, AlertCircle,
+  Link2, Brain, X, Loader2, AlertCircle,
   ChevronRight,
 } from "lucide-react";
 import LiveTime from "@/components/ui/LiveTime";
@@ -397,18 +397,6 @@ export default function MarketsPage() {
                   >
                     View Full Analysis <ChevronRight size={14} />
                   </Link>
-                  <a
-                    href={
-                      urlResult.marketSlug
-                        ? `https://polymarket.com/event/${urlResult.eventSlug}/${urlResult.marketSlug}`
-                        : `https://polymarket.com/event/${urlResult.eventSlug}`
-                    }
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn-ghost text-sm flex items-center gap-2"
-                  >
-                    Open on Polymarket <ExternalLink size={13} />
-                  </a>
                 </div>
               </div>
             </div>
