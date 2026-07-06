@@ -100,10 +100,51 @@ export async function fetchTrendingMarkets(limit = 100): Promise<PolyMarket[]> {
 }
 
 export async function fetchMarketBySlug(slug: string): Promise<PolyMarket | null> {
+  // ── Strategy 1: look up as an EVENT (most Polymarket URLs are events) ──
   try {
-    // Gamma API supports ?slug= query
+    const evRes = await axios.get(`${GAMMA_API}/events`, {
+      params: { slug, limit: 1 },
+      timeout: 8000,
+    });
+    const events = Array.isArray(evRes.data) ? evRes.data : [];
+    if (events.length > 0) {
+      const ev = events[0];
+      // Pick the best market inside the event:
+      // prefer active+open, fall back to any market in the array
+      const inner: any[] = Array.isArray(ev.markets) ? ev.markets : [];
+      const best =
+        inner.find((m: any) => m.active && !m.closed) ||
+        inner.find((m: any) => m.active) ||
+        inner[0];
+
+      if (best) {
+        const [yes, no] = parseOutcomePrices(best.outcomePrices);
+        return {
+          // Use the event-level id/slug so the URL round-trip works
+          id: ev.slug || ev.ticker || slug,
+          question: best.question || ev.title,
+          category: getCategory(best.question || ev.title || ""),
+          image: ev.image || ev.icon || best.image,
+          // Use event-level volume/liquidity (aggregate across all inner markets)
+          volume: parseFloat(ev.volume || best.volume || "0"),
+          volume24h: parseFloat(ev.volume24hr || "0"),
+          liquidity: parseFloat(ev.liquidity || best.liquidity || "0"),
+          yes_price: yes,
+          no_price: no,
+          end_date: ev.endDate || best.endDate,
+          active: !!ev.active,
+          tags: [],
+        };
+      }
+    }
+  } catch {
+    // fall through to market slug lookup
+  }
+
+  // ── Strategy 2: direct market slug lookup (fallback) ──
+  try {
     const res = await axios.get(`${GAMMA_API}/markets`, {
-      params: { slug, limit: 1, active: false }, // active:false so closed markets also resolve
+      params: { slug, limit: 1 },
       timeout: 8000,
     });
     const data = Array.isArray(res.data) ? res.data : (res.data?.markets || []);
