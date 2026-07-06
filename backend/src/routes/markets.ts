@@ -78,14 +78,20 @@ router.post("/from-url", async (req: Request, res: Response) => {
       return res.status(400).json({ error: "url is required" });
     }
 
-    // Support: polymarket.com/event/{slug} or polymarket.com/market/{slug}
-    const match = url.match(/polymarket\.com\/(?:event|market)\/([^/?#\s]+)/i);
+    // Support:
+    //   polymarket.com/event/{event-slug}
+    //   polymarket.com/event/{event-slug}/{market-slug}
+    //   polymarket.com/market/{slug}
+    const match = url.match(/polymarket\.com\/(?:event|market)\/([^/?#\s]+)(?:\/([^/?#\s]+))?/i);
     if (!match) {
       return res.status(400).json({ error: "Not a valid Polymarket URL. Expected: polymarket.com/event/{slug}" });
     }
 
-    const slug = match[1];
-    const raw = await fetchMarketBySlug(slug);
+    const eventSlug  = match[1];
+    const marketSlug = match[2] || undefined; // second path segment = specific market within event
+    const slug       = marketSlug || eventSlug;
+
+    const raw = await fetchMarketBySlug(eventSlug, marketSlug);
 
     if (!raw) {
       return res.status(404).json({ error: `Market "${slug}" not found on Polymarket. It may be closed or unlisted.` });
@@ -115,7 +121,8 @@ router.post("/from-url", async (req: Request, res: Response) => {
     // Full GPT AI analysis
     const analysis = await analyzeMarket(raw.question, raw.yes_price, raw.category, raw.volume);
 
-    res.json({ market, analysis, slug });
+    // Return both slugs so the frontend can reconstruct the exact original URL
+    res.json({ market, analysis, slug, eventSlug, marketSlug: marketSlug || null });
   } catch (err) {
     console.error("from-url error:", err);
     res.status(500).json({ error: "Failed to analyze market" });

@@ -45,6 +45,8 @@ interface UrlResult {
     updated_at: string;
   };
   slug: string;
+  eventSlug: string;
+  marketSlug: string | null;
 }
 
 export default function MarketsPage() {
@@ -396,7 +398,11 @@ export default function MarketsPage() {
                     View Full Analysis <ChevronRight size={14} />
                   </Link>
                   <a
-                    href={`https://polymarket.com/event/${urlResult.slug}`}
+                    href={
+                      urlResult.marketSlug
+                        ? `https://polymarket.com/event/${urlResult.eventSlug}/${urlResult.marketSlug}`
+                        : `https://polymarket.com/event/${urlResult.eventSlug}`
+                    }
                     target="_blank"
                     rel="noopener noreferrer"
                     className="btn-ghost text-sm flex items-center gap-2"

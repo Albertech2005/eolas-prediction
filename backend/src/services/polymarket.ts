@@ -99,52 +99,65 @@ export async function fetchTrendingMarkets(limit = 100): Promise<PolyMarket[]> {
   }
 }
 
-export async function fetchMarketBySlug(slug: string): Promise<PolyMarket | null> {
-  // ── Strategy 1: look up as an EVENT (most Polymarket URLs are events) ──
+export async function fetchMarketBySlug(eventSlug: string, marketSlug?: string): Promise<PolyMarket | null> {
+  // ── Strategy 1: look up as an EVENT ──
   try {
     const evRes = await axios.get(`${GAMMA_API}/events`, {
-      params: { slug, limit: 1 },
+      params: { slug: eventSlug, limit: 1 },
       timeout: 8000,
     });
     const events = Array.isArray(evRes.data) ? evRes.data : [];
     if (events.length > 0) {
       const ev = events[0];
-      // Pick the best market inside the event:
-      // prefer active+open, fall back to any market in the array
       const inner: any[] = Array.isArray(ev.markets) ? ev.markets : [];
-      const best =
-        inner.find((m: any) => m.active && !m.closed) ||
-        inner.find((m: any) => m.active) ||
-        inner[0];
+
+      let best: any = null;
+
+      if (marketSlug) {
+        // Try to find the specific sub-market the user linked to:
+        // 1. Exact slug match
+        best = inner.find((m: any) => m.slug === marketSlug);
+        // 2. Starts-with match (URL slug may omit the timestamp suffix)
+        if (!best) best = inner.find((m: any) => typeof m.slug === "string" && m.slug.startsWith(marketSlug));
+        // 3. Contains match (fallback for slug formatting differences)
+        if (!best) best = inner.find((m: any) => typeof m.slug === "string" && m.slug.includes(marketSlug));
+      }
+
+      // No specific market found (or no marketSlug given) → pick best open one
+      if (!best) {
+        best =
+          inner.find((m: any) => m.active && !m.closed) ||
+          inner.find((m: any) => m.active) ||
+          inner[0];
+      }
 
       if (best) {
         const [yes, no] = parseOutcomePrices(best.outcomePrices);
         return {
-          // Use the event-level id/slug so the URL round-trip works
-          id: ev.slug || ev.ticker || slug,
+          id: best.slug || ev.slug || eventSlug,
           question: best.question || ev.title,
           category: getCategory(best.question || ev.title || ""),
           image: ev.image || ev.icon || best.image,
-          // Use event-level volume/liquidity (aggregate across all inner markets)
-          volume: parseFloat(ev.volume || best.volume || "0"),
-          volume24h: parseFloat(ev.volume24hr || "0"),
-          liquidity: parseFloat(ev.liquidity || best.liquidity || "0"),
+          volume: parseFloat(best.volume || ev.volume || "0"),
+          volume24h: parseFloat(best.volume24hr || ev.volume24hr || "0"),
+          liquidity: parseFloat(best.liquidity || ev.liquidity || "0"),
           yes_price: yes,
           no_price: no,
-          end_date: ev.endDate || best.endDate,
-          active: !!ev.active,
+          end_date: best.endDate || best.endDateIso || ev.endDate,
+          active: !!best.active,
           tags: [],
         };
       }
     }
   } catch {
-    // fall through to market slug lookup
+    // fall through
   }
 
   // ── Strategy 2: direct market slug lookup (fallback) ──
+  const slugToTry = marketSlug || eventSlug;
   try {
     const res = await axios.get(`${GAMMA_API}/markets`, {
-      params: { slug, limit: 1 },
+      params: { slug: slugToTry, limit: 1 },
       timeout: 8000,
     });
     const data = Array.isArray(res.data) ? res.data : (res.data?.markets || []);
@@ -152,7 +165,7 @@ export async function fetchMarketBySlug(slug: string): Promise<PolyMarket | null
     const m = data[0];
     const [yes, no] = parseOutcomePrices(m.outcomePrices);
     return {
-      id: m.id || m.conditionId || slug,
+      id: m.slug || m.id || m.conditionId || slugToTry,
       question: m.question,
       category: getCategory(m.question),
       image: m.image || m.icon,
